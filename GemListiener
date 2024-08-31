@@ -87,4 +87,56 @@ public class GemListener implements Listener {
 
                 case ChatColor.GRAY + "Invisibility Gem":
                     player.getWorld().getPlayers().stream()
-                            .filter(p -> p.getLocation
+                            .filter(p -> p.getLocation().distance(player.getLocation()) <= 20)
+                            .forEach(p -> p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60 * 20, 0)));
+                    player.sendMessage(ChatColor.GRAY + "All players within 20 blocks are now invisible for 1 minute!");
+                    break;
+
+                case ChatColor.ORANGE + "Explosion Gem":
+                    for (int i = 0; i < 3; i++) {
+                        player.launchProjectile(org.bukkit.entity.Fireball.class);
+                    }
+                    player.sendMessage(ChatColor.RED + "You have launched 3 fireballs!");
+                    break;
+
+                case ChatColor.DARK_BLUE + "Warden Gem":
+                    Entity targetEntity = getTargetEntity(player, 5);
+                    if (targetEntity instanceof Player) {
+                        ((Player) targetEntity).addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 30 * 20, 0));
+                        player.sendMessage(ChatColor.DARK_BLUE + "The entity is now engulfed in darkness!");
+                    }
+                    break;
+
+                case ChatColor.LIGHT_PURPLE + "Merciful Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 1));
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + "You are regenerating health for 30 seconds!");
+                    break;
+
+                case ChatColor.DARK_GREEN + "Turtle Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 30 * 20, 2));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 30 * 20, 3));
+                    player.sendMessage(ChatColor.DARK_GREEN + "You have Turtle Master effect for 30 seconds!");
+                    break;
+
+                default:
+                    return;
+            }
+
+            plugin.setCooldown(player.getUniqueId(), 3 * 60 * 1000); // 3 minutes cooldown
+            player.sendMessage(ChatColor.GRAY + "Cooldown set for 3 minutes.");
+        }
+    }
+
+    private Entity getTargetEntity(Player player, double range) {
+        Vector direction = player.getEyeLocation().getDirection();
+        for (double d = 0; d < range; d += 0.5) {
+            Location loc = player.getEyeLocation().add(direction.multiply(d));
+            for (Entity entity : player.getWorld().getEntities()) {
+                if (entity.getLocation().distance(loc) < 1.0) {
+                    return entity;
+                }
+            }
+        }
+        return null;
+    }
+}
