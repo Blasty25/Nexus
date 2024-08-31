@@ -1,0 +1,69 @@
+package com.example.gemplugin;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class GemPlugin extends JavaPlugin implements Listener {
+    private final Map<UUID, Long> cooldowns = new HashMap<>();
+
+    @Override
+    public void onEnable() {
+        Bukkit.getPluginManager().registerEvents(new GemListener(this), this);
+        Bukkit.addRecipe(GemUtils.createReRollerRecipe());
+        getLogger().info("GemPlugin enabled!");
+    }
+
+    @Override
+    public void onDisable() {
+        getLogger().info("GemPlugin disabled!");
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("givegem")) {
+            if (args.length != 2) {
+                sender.sendMessage(ChatColor.RED + "Usage: /givegem <player> <gemtype>");
+                return false;
+            }
+
+            Player player = Bukkit.getPlayer(args[0]);
+            if (player == null) {
+                sender.sendMessage(ChatColor.RED + "Player not found.");
+                return false;
+            }
+
+            ItemStack gem = GemUtils.getGemByName(args[1]);
+            if (gem == null) {
+                sender.sendMessage(ChatColor.RED + "Invalid gem type.");
+                return false;
+            }
+
+            player.getInventory().addItem(gem);
+            player.sendMessage(ChatColor.GREEN + "You have received a " + gem.getItemMeta().getDisplayName());
+        }
+        return true;
+    }
+
+    public boolean isOnCooldown(UUID playerId) {
+        return cooldowns.containsKey(playerId) && cooldowns.get(playerId) > System.currentTimeMillis();
+    }
+
+    public void setCooldown(UUID playerId, long cooldownTime) {
+        cooldowns.put(playerId, System.currentTimeMillis() + cooldownTime);
+    }
+
+    public long getCooldown(UUID playerId) {
+        return (cooldowns.getOrDefault(playerId, 0L) - System.currentTimeMillis()) / 1000;
+    }
+}
