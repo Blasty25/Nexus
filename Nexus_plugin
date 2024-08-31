@@ -1,0 +1,265 @@
+package com.example.gemplugin;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class GemPlugin extends JavaPlugin implements Listener {
+    private final Map<UUID, Long> cooldowns = new HashMap<>();
+
+    @Override
+    public void onEnable() {
+        Bukkit.getPluginManager().registerEvents(new GemListener(this), this);
+        Bukkit.addRecipe(GemUtils.createReRollerRecipe());
+        getLogger().info("GemPlugin enabled!");
+    }
+
+    @Override
+    public void onDisable() {
+        getLogger().info("GemPlugin disabled!");
+    }
+
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("givegem")) {
+            if (args.length != 2) {
+                sender.sendMessage(ChatColor.RED + "Usage: /givegem <player> <gemtype>");
+                return false;
+            }
+
+            Player player = Bukkit.getPlayer(args[0]);
+            if (player == null) {
+                sender.sendMessage(ChatColor.RED + "Player not found.");
+                return false;
+            }
+
+            ItemStack gem = GemUtils.getGemByName(args[1]);
+            if (gem == null) {
+                sender.sendMessage(ChatColor.RED + "Invalid gem type.");
+                return false;
+            }
+
+            player.getInventory().addItem(gem);
+            player.sendMessage(ChatColor.GREEN + "You have received a " + gem.getItemMeta().getDisplayName());
+        }
+        return true;
+    }
+
+    public boolean isOnCooldown(UUID playerId) {
+        return cooldowns.containsKey(playerId) && cooldowns.get(playerId) > System.currentTimeMillis();
+    }
+
+    public void setCooldown(UUID playerId, long cooldownTime) {
+        cooldowns.put(playerId, System.currentTimeMillis() + cooldownTime);
+    }
+
+    public long getCooldown(UUID playerId) {
+        return (cooldowns.get(playerId) - System.currentTimeMillis()) / 1000;
+    }
+}
+package com.example.gemplugin;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
+
+public class GemListener implements Listener {
+    private final GemPlugin plugin;
+
+    public GemListener(GemPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        
+        if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            String itemName = item.getItemMeta().getDisplayName();
+
+            if (plugin.isOnCooldown(player.getUniqueId())) {
+                player.sendMessage(ChatColor.RED + "This gem is on cooldown! " +
+                        plugin.getCooldown(player.getUniqueId()) + " seconds remaining.");
+                return;
+            }
+
+            switch (itemName) {
+                case ChatColor.RED + "Fire Resistant Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 8 * 60 * 20, 0));
+                    player.sendMessage(ChatColor.GOLD + "You are now fire resistant for 8 minutes!");
+                    break;
+
+                case ChatColor.BLUE + "Speed Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30 * 20, 2));
+                    Bukkit.getScheduler().runTaskLater(plugin, () ->
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 60 * 20, 0)), 30 * 20L);
+                    player.sendMessage(ChatColor.AQUA + "You have Speed 3 for 30 seconds!");
+                    break;
+
+                case ChatColor.DARK_RED + "Strength Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 10 * 20, 2));
+                    Bukkit.getScheduler().runTaskLater(plugin, () ->
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 3 * 60 * 20, 0)), 10 * 20L);
+                    player.sendMessage(ChatColor.RED + "You have Strength 3 for 10 seconds!");
+                    break;
+
+                case ChatColor.GREEN + "Puff Gem":
+                    if (event.getAction().isRightClick()) {
+                        Entity target = getTargetEntity(player, 5);
+                        if (target != null) {
+                            target.setVelocity(new Vector(0, 2, 0));
+                            target.getWorld().playSound(target.getLocation(), Sound.ENTITY_GHAST_SHOOT, 1.0f, 1.0f);
+                            player.sendMessage(ChatColor.GREEN + "Entity launched into the air!");
+                        }
+                    }
+                    break;
+
+                case ChatColor.DARK_GRAY + "Withering Gem":
+                    Entity target = getTargetEntity(player, 5);
+                    if (target != null) {
+                        if (target instanceof Player) {
+                            ((Player) target).addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 20 * 20, 1));
+                            target.getWorld().spawnParticle(Particle.SQUID_INK, target.getLocation(), 30);
+                            target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_HURT, 1.0f, 1.0f);
+                            player.sendMessage(ChatColor.DARK_GRAY + "You have withered the entity!");
+                        }
+                    }
+                    break;
+
+                case ChatColor.AQUA + "Water Gem":
+                    if (player.isInWater()) {
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 60 * 20, 1));
+                        player.sendMessage(ChatColor.AQUA + "You now have Dolphin's Grace for 1 minute!");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "You must be in water to use this gem!");
+                    }
+                    break;
+
+                case ChatColor.GRAY + "Invisibility Gem":
+                    player.getWorld().getPlayers().stream()
+                            .filter(p -> p.getLocation().distance(player.getLocation()) <= 20)
+                            .forEach(p -> p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60 * 20, 0)));
+                    player.sendMessage(ChatColor.GRAY + "All players within 20 blocks are now invisible for 1 minute!");
+                    break;
+
+                case ChatColor.ORANGE + "Explosion Gem":
+                    for (int i = 0; i < 3; i++) {
+                        player.launchProjectile(Fireball.class);
+                    }
+                    player.sendMessage(ChatColor.RED + "You have launched 3 fireballs!");
+                    break;
+
+                case ChatColor.DARK_BLUE + "Warden Gem":
+                    Entity targetEntity = getTargetEntity(player, 5);
+                    if (targetEntity instanceof Player) {
+                        ((Player) targetEntity).addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 30 * 20, 0));
+                        player.sendMessage(ChatColor.DARK_BLUE + "The entity is now engulfed in darkness!");
+                    }
+                    break;
+
+                case ChatColor.LIGHT_PURPLE + "Merciful Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 30 * 20, 1));
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + "You are regenerating health for 30 seconds!");
+                    break;
+
+                case ChatColor.DARK_GREEN + "Turtle Gem":
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 30 * 20, 2));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 30 * 20, 3));
+                    player.sendMessage(ChatColor.DARK_GREEN + "You have Turtle Master effect for 30 seconds!");
+                    break;
+
+                default:
+                    return;
+            }
+
+            plugin.setCooldown(player.getUniqueId(), 3 * 60 * 1000); // 3 minutes cooldown
+            player.sendMessage(ChatColor.GRAY + "Cooldown set for 3 minutes.");
+        }
+    }
+
+    private Entity getTargetEntity(Player player, double range) {
+        // Implement a method to find the targeted entity within a certain range
+        return null; // Placeholder, needs implementation
+    }
+}
+package com.example.gemplugin;
+
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class GemUtils {
+
+    public static ItemStack createGem(String name, Material material, ChatColor color) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(color + name);
+            item
+           meta.setDisplayName(color + name);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack getGemByName(String name) {
+        switch (name.toLowerCase()) {
+            case "fire resistant gem":
+                return createGem("Fire Resistant Gem", Material.BLAZE_POWDER, ChatColor.RED);
+            case "speed gem":
+                return createGem("Speed Gem", Material.SUGAR, ChatColor.BLUE);
+            case "strength gem":
+                return createGem("Strength Gem", Material.GHAST_TEAR, ChatColor.DARK_RED);
+            case "puff gem":
+                return createGem("Puff Gem", Material.PUFFERFISH, ChatColor.GREEN);
+            case "withering gem":
+                return createGem("Withering Gem", Material.WITHER_ROSE, ChatColor.DARK_GRAY);
+            case "water gem":
+                return createGem("Water Gem", Material.HEART_OF_THE_SEA, ChatColor.AQUA);
+            case "invisibility gem":
+                return createGem("Invisibility Gem", Material.FERMENTED_SPIDER_EYE, ChatColor.GRAY);
+            case "explosion gem":
+                return createGem("Explosion Gem", Material.FIRE_CHARGE, ChatColor.ORANGE);
+            case "warden gem":
+                return createGem("Warden Gem", Material.SCULK_SENSOR, ChatColor.DARK_BLUE);
+            case "merciful gem":
+                return createGem("Merciful Gem", Material.ENCHANTED_GOLDEN_APPLE, ChatColor.LIGHT_PURPLE);
+            case "turtle gem":
+                return createGem("Turtle Gem", Material.SCUTE, ChatColor.DARK_GREEN);
+            default:
+                return null;
+        }
+    }
+
+    public static ShapedRecipe createReRollerRecipe() {
+        ItemStack reRoller = createGem("Re-Roller", Material.NETHER_STAR, ChatColor.GOLD);
+        ShapedRecipe recipe = new ShapedRecipe(reRoller);
+        recipe.shape("TOT", "WSW", "TOT");
+        recipe.setIngredient('T', Material.TOTEM_OF_UNDYING);
+        recipe.setIngredient('W', Material.WITHER_SKELETON_SKULL);
+        recipe.setIngredient('S', Material.NETHER_STAR);
+        return recipe;
+    }
+}
