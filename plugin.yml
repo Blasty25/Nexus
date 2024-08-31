@@ -1,4 +1,5 @@
-name: Nexus
+name: GemPlugin
 version: 1.0
-main: com.yourname.nexus.MainClass
-api-version: 1.16
+main: com.example.gemplugin.GemPlugin
+api-version: 1.21
+description: Pvp enchancer
