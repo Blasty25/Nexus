@@ -2,6 +2,7 @@ package com.example.gemplugin;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -25,7 +26,7 @@ public class GemListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
-
+        
         if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             String itemName = item.getItemMeta().getDisplayName();
 
@@ -68,11 +69,13 @@ public class GemListener implements Listener {
 
                 case ChatColor.DARK_GRAY + "Withering Gem":
                     Entity target = getTargetEntity(player, 5);
-                    if (target != null && target instanceof Player) {
-                        ((Player) target).addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 20 * 20, 1));
-                        target.getWorld().spawnParticle(Particle.SQUID_INK, target.getLocation(), 30);
-                        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_HURT, 1.0f, 1.0f);
-                        player.sendMessage(ChatColor.DARK_GRAY + "You have withered the entity!");
+                    if (target != null) {
+                        if (target instanceof Player) {
+                            ((Player) target).addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 20 * 20, 1));
+                            target.getWorld().spawnParticle(Particle.SQUID_INK, target.getLocation(), 30);
+                            target.getWorld().playSound(target.getLocation(), Sound.ENTITY_WITHER_HURT, 1.0f, 1.0f);
+                            player.sendMessage(ChatColor.DARK_GRAY + "You have withered the entity!");
+                        }
                     }
                     break;
 
@@ -94,7 +97,7 @@ public class GemListener implements Listener {
 
                 case ChatColor.ORANGE + "Explosion Gem":
                     for (int i = 0; i < 3; i++) {
-                        player.launchProjectile(org.bukkit.entity.Fireball.class);
+                        player.launchProjectile(Fireball.class);
                     }
                     player.sendMessage(ChatColor.RED + "You have launched 3 fireballs!");
                     break;
@@ -128,15 +131,7 @@ public class GemListener implements Listener {
     }
 
     private Entity getTargetEntity(Player player, double range) {
-        Vector direction = player.getEyeLocation().getDirection();
-        for (double d = 0; d < range; d += 0.5) {
-            Location loc = player.getEyeLocation().add(direction.multiply(d));
-            for (Entity entity : player.getWorld().getEntities()) {
-                if (entity.getLocation().distance(loc) < 1.0) {
-                    return entity;
-                }
-            }
-        }
-        return null;
+        // Implement a method to find the targeted entity within a certain range
+        return null; // Placeholder, needs implementation
     }
 }
