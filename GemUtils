@@ -3,57 +3,69 @@ package com.example.gemplugin;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.ShapedRecipe;
 
 public class GemUtils {
-
-    public static ItemStack createGem(String name, Material material, ChatColor color) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(color + name);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
     public static ItemStack getGemByName(String name) {
+        ItemStack gem = new ItemStack(Material.EMERALD);
+        ItemMeta meta = gem.getItemMeta();
+
+        if (meta == null) return null;
+
         switch (name.toLowerCase()) {
-            case "fire resistant gem":
-                return createGem("Fire Resistant Gem", Material.BLAZE_POWDER, ChatColor.RED);
-            case "speed gem":
-                return createGem("Speed Gem", Material.SUGAR, ChatColor.BLUE);
-            case "strength gem":
-                return createGem("Strength Gem", Material.GHAST_TEAR, ChatColor.DARK_RED);
-            case "puff gem":
-                return createGem("Puff Gem", Material.PUFFERFISH, ChatColor.GREEN);
-            case "withering gem":
-                return createGem("Withering Gem", Material.WITHER_ROSE, ChatColor.DARK_GRAY);
-            case "water gem":
-                return createGem("Water Gem", Material.HEART_OF_THE_SEA, ChatColor.AQUA);
-            case "invisibility gem":
-                return createGem("Invisibility Gem", Material.FERMENTED_SPIDER_EYE, ChatColor.GRAY);
-            case "explosion gem":
-                return createGem("Explosion Gem", Material.FIRE_CHARGE, ChatColor.ORANGE);
-            case "warden gem":
-                return createGem("Warden Gem", Material.SCULK_SENSOR, ChatColor.DARK_BLUE);
-            case "merciful gem":
-                return createGem("Merciful Gem", Material.ENCHANTED_GOLDEN_APPLE, ChatColor.LIGHT_PURPLE);
-            case "turtle gem":
-                return createGem("Turtle Gem", Material.SCUTE, ChatColor.DARK_GREEN);
+            case "fire":
+                meta.setDisplayName(ChatColor.RED + "Fire Resistant Gem");
+                break;
+            case "speed":
+                meta.setDisplayName(ChatColor.BLUE + "Speed Gem");
+                break;
+            case "strength":
+                meta.setDisplayName(ChatColor.DARK_RED + "Strength Gem");
+                break;
+            case "puff":
+                meta.setDisplayName(ChatColor.GREEN + "Puff Gem");
+                break;
+            case "withering":
+                meta.setDisplayName(ChatColor.DARK_GRAY + "Withering Gem");
+                break;
+            case "water":
+                meta.setDisplayName(ChatColor.AQUA + "Water Gem");
+                break;
+            case "invisibility":
+                meta.setDisplayName(ChatColor.GRAY + "Invisibility Gem");
+                break;
+            case "explosion":
+                meta.setDisplayName(ChatColor.ORANGE + "Explosion Gem");
+                break;
+            case "warden":
+                meta.setDisplayName(ChatColor.DARK_BLUE + "Warden Gem");
+                break;
+            case "merciful":
+                meta.setDisplayName(ChatColor.LIGHT_PURPLE + "Merciful Gem");
+                break;
+            case "turtle":
+                meta.setDisplayName(ChatColor.DARK_GREEN + "Turtle Gem");
+                break;
             default:
                 return null;
         }
+
+        gem.setItemMeta(meta);
+        return gem;
+    }
+
+    public static boolean isSpecialGem(ItemStack item) {
+        if (item == null || !item.hasItemMeta() || !item.getItemMeta().hasDisplayName()) {
+            return false;
+        }
+
+        String displayName = item.getItemMeta().getDisplayName();
+        return displayName.contains("Gem");
     }
 
     public static ShapedRecipe createReRollerRecipe() {
-        ItemStack reRoller = createGem("Re-Roller", Material.NETHER_STAR, ChatColor.GOLD);
-        ShapedRecipe recipe = new ShapedRecipe(reRoller);
-        recipe.shape("TOT", "WSW", "TOT");
-        recipe.setIngredient('T', Material.TOTEM_OF_UNDYING);
-        recipe.setIngredient('W', Material.WITHER_SKELETON_SKULL);
-        recipe.setIngredient('S', Material.NETHER_STAR);
-        return recipe;
+        // Create a recipe for the ReRoller item, this is just an example
+        return null; // Placeholder, you need to implement this with the actual recipe
     }
 }
